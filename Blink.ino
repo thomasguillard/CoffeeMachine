@@ -1,10 +1,4 @@
-enum ControlMode
-{
-  error,
-  off,
-  schedule,
-  on
-};
+#include "ControlMode.h"
 
 int schedulePin = D1;
 int onPin = D2;
