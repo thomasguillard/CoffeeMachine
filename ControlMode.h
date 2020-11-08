@@ -1,5 +1,5 @@
-#ifndef CONTROL_MODE_H_
-#define CONTROL_MODE_H_
+#ifndef CONTROL_MODE_H
+#define CONTROL_MODE_H
 
 #include "Arduino.h"
 
@@ -11,4 +11,4 @@ enum ControlMode
   on
 };
 
-#endif /* CONTROL_MODE_H_ */
+#endif /* CONTROL_MODE_H */
