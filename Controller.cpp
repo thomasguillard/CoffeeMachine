@@ -5,35 +5,71 @@
 #include "Arduino.h"
 #include "Controller.h"
 #include "ControlMode.h"
+#include <OneButton.h>
 
 // Constructor /////////////////////////////////////////////////////////////////
-Controller::Controller(int relayPin, int isSchedulePin, int isOnPin)
+Controller::Controller(uint8_t  relayPin, uint8_t  isSchedulePin, uint8_t  isReadyPin, uint8_t  isOnPin)
 {
-    _mode = off;
-    _isStarted = false;
     _relayPin = relayPin;
     _isSchedulePin = isSchedulePin;
+    _isReadyPin = isReadyPin;
     _isOnPin = isOnPin;
 }
 
 // Public Methods //////////////////////////////////////////////////////////////
 void Controller::setup()
 {
+    pinMode(_relayPin, OUTPUT);
     pinMode(_isSchedulePin, INPUT_PULLUP);
     pinMode(_isOnPin, INPUT_PULLUP);
-    pinMode(_relayPin, OUTPUT);
+
+    _btn = OneButton(_isReadyPin, true, true);
+    _btn.attachClick(btnCallback, this);
+
     stop();
 }
 
 void Controller::tick()
 {
     evaluateMode();
+    _btn.tick();
     set();
 }
 
-ControlMode Controller::showMode()
+String Controller::showMode()
 {
-    return _mode;
+    switch (_mode)
+    {
+    case ControlMode::error:
+        return "Error";
+        break;
+
+    case ControlMode::off:
+        return "Off";
+        break;
+
+    case ControlMode::schedule:
+        return "Schedule";
+        break;
+
+    case ControlMode::on:
+        return "On";
+        break;
+
+    default:
+        return "Unknown";
+        break;
+    }
+}
+
+bool Controller::isReady()
+{
+    return _isReady;
+}
+
+bool Controller::isStarted()
+{
+    return _isStarted;
 }
 
 // Private Methods /////////////////////////////////////////////////////////////
@@ -43,23 +79,23 @@ void Controller::evaluateMode()
     bool isOn = !digitalRead(_isOnPin);
 
     // Check for potential shorts
-    if (isSchedule and isOn)
+    if (isSchedule && isOn)
     {
-        _mode = error;
+        _mode = ControlMode::error;
         return;
     }
 
     if (isOn)
     {
-        _mode = on;
+        _mode = ControlMode::on;
     }
     else if (isSchedule)
     {
-        _mode = schedule;
+        _mode = ControlMode::schedule;
     }
     else
     {
-        _mode = off;
+        _mode = ControlMode::off;
     }
 }
 
@@ -67,27 +103,24 @@ void Controller::set()
 {
     switch (_mode)
     {
-    case error ... off:
+    case ControlMode::error... ControlMode::off:
         if (_isStarted)
         {
             stop();
         }
         break;
 
-    case on:
+    case ControlMode::on:
         if (!_isStarted)
         {
             start();
         }
         break;
 
-    case schedule:
-        if (!_isStarted)
+    case ControlMode::schedule:
+        if (!_isStarted && _isReady && shouldStart())
         {
-            if (shouldStart())
-            {
-                start();
-            }
+            start();
         }
         break;
 
@@ -110,9 +143,18 @@ void Controller::control(bool state)
 {
     digitalWrite(_relayPin, !state);
     _isStarted = state;
+    _isReady = false;
 }
 
+// Private
+void Controller::btnCallback(void *ptr)
+{
+    Controller *controllerPtr = (Controller *)ptr;
+    controllerPtr->_isReady = !controllerPtr->_isReady;
+}
+
+// TODO: Link to schedule
 bool Controller::shouldStart()
 {
-    return millis()>30000;
+    return millis() > 30000;
 }
