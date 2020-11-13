@@ -1,16 +1,20 @@
 #include "Controller.h"
+#include "Config.h"
 
-uint8_t relayPin = LED_BUILTIN;
-uint8_t schedulePin = D1;
-uint8_t readyPin = D7;
-uint8_t onPin = D2;
-
-Controller controller(relayPin, schedulePin, readyPin, onPin);
+Controller controller(config_relayPin,
+                      config_schedulePin,
+                      config_readyPin,
+                      config_onPin,
+                      config_ssid,
+                      config_password,
+                      config_ntpServer,
+                      config_timeZone,
+                      config_timeRefreshInterval);
 
 void setup()
 {
   controller.setup();
-  Serial.begin(9600);
+  Serial.begin(115200);
 }
 
 void loop()
@@ -21,8 +25,6 @@ void loop()
   Serial.print(controller.showMode());
   Serial.print(" - IsReady: ");
   Serial.print(controller.isReady());
-  Serial.print(" - Time: ");
-  Serial.print(millis());
   Serial.print(" - IsStarted: ");
   Serial.println(controller.isStarted());
 }
