@@ -7,7 +7,8 @@ enum ControlMode
 {
   error,
   off,
-  schedule,
+  schedule_check,
+  schedule_fulfill,
   on
 };
 
