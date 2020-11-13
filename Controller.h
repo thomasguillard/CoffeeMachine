@@ -2,6 +2,8 @@
   Controller.h - Support Library to control a coffee machine.
 */
 #include "ControlMode.h"
+#include "WiFiLink.h"
+#include "TimeKeeper.h"
 #include <OneButton.h>
 
 #ifndef Controller_h
@@ -10,7 +12,15 @@
 class Controller
 {
 public:
-  Controller(uint8_t relayPin, uint8_t isSchedulePin, uint8_t isReadyPin, uint8_t isOnPin);
+  Controller(uint8_t relayPin,
+             uint8_t isSchedulePin,
+             uint8_t isReadyPin,
+             uint8_t isOnPin,
+             char *ssid,
+             char *password,
+             char *ntpServer,
+             char *timeZone,
+             int timeRefreshInterval);
   void setup();
   void tick();
   // TODO: Temporary
@@ -29,11 +39,14 @@ private:
   OneButton _btn;
   static void btnCallback(void *ptr);
   void evaluateMode();
-  void set();
+  void manage();
   void stop();
   void start();
   void control(bool state);
   bool shouldStart();
+  bool shouldStop();
+  WiFiLink _wiFiLink;
+  TimeKeeper _timeKeeper;
 };
 
 #endif

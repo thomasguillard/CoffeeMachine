@@ -7,16 +7,26 @@
 #include "ControlMode.h"
 #include <OneButton.h>
 
-// Constructor /////////////////////////////////////////////////////////////////
-Controller::Controller(uint8_t  relayPin, uint8_t  isSchedulePin, uint8_t  isReadyPin, uint8_t  isOnPin)
+// Constructor
+Controller::Controller(uint8_t relayPin,
+                       uint8_t isSchedulePin,
+                       uint8_t isReadyPin,
+                       uint8_t isOnPin,
+                       char *ssid,
+                       char *password,
+                       char *ntpServer,
+                       char *timeZone,
+                       int timeRefreshInterval)
 {
     _relayPin = relayPin;
     _isSchedulePin = isSchedulePin;
     _isReadyPin = isReadyPin;
     _isOnPin = isOnPin;
+    _wiFiLink = WiFiLink(ssid, password);
+    _timeKeeper = TimeKeeper(ntpServer, timeZone, timeRefreshInterval);
 }
 
-// Public Methods //////////////////////////////////////////////////////////////
+// Public
 void Controller::setup()
 {
     pinMode(_relayPin, OUTPUT);
@@ -27,13 +37,16 @@ void Controller::setup()
     _btn.attachClick(btnCallback, this);
 
     stop();
+
+    _wiFiLink.setup();
+    _timeKeeper.setup();
 }
 
 void Controller::tick()
 {
-    evaluateMode();
     _btn.tick();
-    set();
+    evaluateMode();
+    manage();
 }
 
 String Controller::showMode()
@@ -48,8 +61,12 @@ String Controller::showMode()
         return "Off";
         break;
 
-    case ControlMode::schedule:
-        return "Schedule";
+    case ControlMode::schedule_check:
+        return "Schedule check";
+        break;
+
+    case ControlMode::schedule_fulfill:
+        return "Schedule fulfill";
         break;
 
     case ControlMode::on:
@@ -72,7 +89,7 @@ bool Controller::isStarted()
     return _isStarted;
 }
 
-// Private Methods /////////////////////////////////////////////////////////////
+// Private
 void Controller::evaluateMode()
 {
     bool isSchedule = !digitalRead(_isSchedulePin);
@@ -91,7 +108,13 @@ void Controller::evaluateMode()
     }
     else if (isSchedule)
     {
-        _mode = ControlMode::schedule;
+        if (_mode == ControlMode::schedule_check || _mode == ControlMode::schedule_fulfill)
+        {
+            _mode = _mode;
+            return;
+        }
+
+        _mode = ControlMode::schedule_check;
     }
     else
     {
@@ -99,7 +122,7 @@ void Controller::evaluateMode()
     }
 }
 
-void Controller::set()
+void Controller::manage()
 {
     switch (_mode)
     {
@@ -117,10 +140,42 @@ void Controller::set()
         }
         break;
 
-    case ControlMode::schedule:
-        if (!_isStarted && _isReady && shouldStart())
+    case ControlMode::schedule_check:
+        if (!_isReady)
+        {
+            if (_isStarted)
+            {
+                stop();
+            }
+            break;
+        }
+
+        _timeKeeper.tick();
+
+        if (!shouldStart())
+        {
+            if (_isStarted)
+            {
+                stop();
+            }
+            break;
+        }
+
+        if (!_isStarted)
         {
             start();
+            _mode = ControlMode::schedule_fulfill;
+            break;
+        }
+        break;
+
+    case ControlMode::schedule_fulfill:
+        _timeKeeper.tick();
+        if (shouldStop() && _isStarted)
+        {
+            stop();
+            _mode = ControlMode::schedule_check;
+            break;
         }
         break;
 
@@ -153,8 +208,28 @@ void Controller::btnCallback(void *ptr)
     controllerPtr->_isReady = !controllerPtr->_isReady;
 }
 
-// TODO: Link to schedule
+// TODO: Link to schedule and how long to keep coffee warm for.
 bool Controller::shouldStart()
 {
-    return millis() > 30000;
+    tm time = _timeKeeper.currentTime();
+    Serial.print("Current time - WD: ");
+    Serial.print(time.tm_wday);
+    Serial.print(" - ");
+    Serial.print(time.tm_hour);
+    Serial.print(":");
+    Serial.print(time.tm_min);
+    return time.tm_wday == 4 && time.tm_hour == 22 && time.tm_min >= 57 && time.tm_min < 58;
+}
+
+// TODO: Link to how long to keep coffee warm for.
+bool Controller::shouldStop()
+{
+    tm time = _timeKeeper.currentTime();
+    Serial.print("Current time - WD: ");
+    Serial.print(time.tm_wday);
+    Serial.print(" - ");
+    Serial.print(time.tm_hour);
+    Serial.print(":");
+    Serial.print(time.tm_min);
+    return time.tm_wday == 4 && time.tm_hour == 22 && time.tm_min >= 58;
 }
