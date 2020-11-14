@@ -20,7 +20,10 @@ public:
              char *password,
              char *ntpServer,
              char *timeZone,
-             int timeRefreshInterval);
+             uint16_t timeRefreshInterval,
+             uint8_t targetTimeHours,
+             uint8_t targetTimeMinutes,
+             uint8_t keepWarmDuration);
   void setup();
   void tick();
   // TODO: Temporary
@@ -43,6 +46,9 @@ private:
   void stop();
   void start();
   void control(bool state);
+  uint8_t _keepWarmDuration;
+  uint8_t _targetTimeHours;
+  uint8_t _targetTimeMinutes;
   bool shouldStart();
   bool shouldStop();
   WiFiLink _wiFiLink;

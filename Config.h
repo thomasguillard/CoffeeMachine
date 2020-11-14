@@ -13,3 +13,6 @@ char *config_password;
 char *config_ntpServer;
 char *config_timeZone;
 uint16_t config_timeRefreshInterval;
+uint8_t config_targetTimeHours;
+uint8_t config_targetTimeMinutes;
+uint8_t config_keepWarmDuration;

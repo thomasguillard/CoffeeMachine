@@ -9,7 +9,10 @@ Controller controller(config_relayPin,
                       config_password,
                       config_ntpServer,
                       config_timeZone,
-                      config_timeRefreshInterval);
+                      config_timeRefreshInterval,
+                      config_targetTimeHours,
+                      config_targetTimeMinutes,
+                      config_keepWarmDuration);
 
 void setup()
 {
