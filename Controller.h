@@ -13,9 +13,10 @@ class Controller
 {
 public:
   Controller(uint8_t relayPin,
-             uint8_t isSchedulePin,
-             uint8_t isReadyPin,
-             uint8_t isOnPin,
+             uint8_t isScheduleModePin,
+             uint8_t isOnModePin,
+             uint8_t isReadyBtnPin,
+             uint8_t isReadyLedPin,
              char *ssid,
              char *password,
              char *ntpServer,
@@ -34,13 +35,15 @@ public:
 private:
   ControlMode _mode = ControlMode::off;
   uint8_t _relayPin;
-  uint8_t _isSchedulePin;
-  uint8_t _isReadyPin;
-  uint8_t _isOnPin;
+  uint8_t _isScheduleModePin;
+  uint8_t _isOnModePin;
+  uint8_t _isReadyBtnPin;
+  uint8_t _isReadyLedPin;
   bool _isStarted = false;
   bool _isReady = false;
-  OneButton _btn;
-  static void btnCallback(void *ptr);
+  OneButton _isReadyBtn;
+  void setIsReady(bool isReady);
+  static void isReadyBtnCallback(void *ptr);
   void evaluateMode();
   void manage();
   void stop();

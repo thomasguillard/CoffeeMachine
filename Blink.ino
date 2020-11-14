@@ -2,9 +2,10 @@
 #include "Config.h"
 
 Controller controller(config_relayPin,
-                      config_schedulePin,
-                      config_readyPin,
-                      config_onPin,
+                      config_isScheduleModePin,
+                      config_isOnModePin,
+                      config_isReadyBtnPin,
+                      config_isReadyLedPin,
                       config_ssid,
                       config_password,
                       config_ntpServer,

@@ -9,9 +9,10 @@
 
 // Constructor
 Controller::Controller(uint8_t relayPin,
-                       uint8_t isSchedulePin,
-                       uint8_t isReadyPin,
-                       uint8_t isOnPin,
+                       uint8_t isScheduleModePin,
+                       uint8_t isOnModePin,
+                       uint8_t isReadyBtnPin,
+                       uint8_t isReadyLedPin,
                        char *ssid,
                        char *password,
                        char *ntpServer,
@@ -22,9 +23,10 @@ Controller::Controller(uint8_t relayPin,
                        uint8_t keepWarmDuration)
 {
     _relayPin = relayPin;
-    _isSchedulePin = isSchedulePin;
-    _isReadyPin = isReadyPin;
-    _isOnPin = isOnPin;
+    _isScheduleModePin = isScheduleModePin;
+    _isOnModePin = isOnModePin;
+    _isReadyBtnPin = isReadyBtnPin;
+    _isReadyLedPin = isReadyLedPin;
     _wiFiLink = WiFiLink(ssid, password);
     _timeKeeper = TimeKeeper(ntpServer, timeZone, timeRefreshInterval);
     _targetTimeHours = targetTimeHours;
@@ -36,11 +38,12 @@ Controller::Controller(uint8_t relayPin,
 void Controller::setup()
 {
     pinMode(_relayPin, OUTPUT);
-    pinMode(_isSchedulePin, INPUT_PULLUP);
-    pinMode(_isOnPin, INPUT_PULLUP);
+    pinMode(_isScheduleModePin, INPUT_PULLUP);
+    pinMode(_isOnModePin, INPUT_PULLUP);
 
-    _btn = OneButton(_isReadyPin, true, true);
-    _btn.attachClick(btnCallback, this);
+    _isReadyBtn = OneButton(_isReadyBtnPin, true, true);
+    _isReadyBtn.attachClick(isReadyBtnCallback, this);
+    pinMode(_isReadyLedPin, OUTPUT);
 
     stop();
 
@@ -50,7 +53,7 @@ void Controller::setup()
 
 void Controller::tick()
 {
-    _btn.tick();
+    _isReadyBtn.tick();
     evaluateMode();
     manage();
 }
@@ -98,8 +101,8 @@ bool Controller::isStarted()
 // Private
 void Controller::evaluateMode()
 {
-    bool isSchedule = !digitalRead(_isSchedulePin);
-    bool isOn = !digitalRead(_isOnPin);
+    bool isSchedule = !digitalRead(_isScheduleModePin);
+    bool isOn = !digitalRead(_isOnModePin);
 
     // Check for potential shorts
     if (isSchedule && isOn)
@@ -204,14 +207,20 @@ void Controller::control(bool state)
 {
     digitalWrite(_relayPin, !state);
     _isStarted = state;
-    _isReady = false;
+    setIsReady(false);
 }
 
 // Private
-void Controller::btnCallback(void *ptr)
+void Controller::isReadyBtnCallback(void *ptr)
 {
     Controller *controllerPtr = (Controller *)ptr;
-    controllerPtr->_isReady = !controllerPtr->_isReady;
+    controllerPtr->setIsReady(!controllerPtr->_isReady);
+}
+
+void Controller::setIsReady(bool isReady)
+{
+    _isReady = isReady;
+    digitalWrite(_isReadyLedPin, _isReady);
 }
 
 // TODO: Link to schedule

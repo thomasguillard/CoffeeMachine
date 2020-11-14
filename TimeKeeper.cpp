@@ -23,6 +23,7 @@ void TimeKeeper::setup()
     configTime(0, 0, _ntpServer);
     setenv("TZ", _timeZone, 1);
     fetchTime();
+    fetchTime();
 }
 
 void TimeKeeper::tick()
