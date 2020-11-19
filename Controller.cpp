@@ -9,8 +9,12 @@
 
 // Constructor
 Controller::Controller(uint8_t relayPin,
-                       uint8_t isScheduleModePin,
-                       uint8_t isOnModePin,
+                       uint8_t isOffModeBtnPin,
+                       uint8_t isOffModeLedPin,
+                       uint8_t isScheduleModeBtnPin,
+                       uint8_t isScheduleModeLedPin,
+                       uint8_t isOnModeBtnPin,
+                       uint8_t isOnModeLedPin,
                        uint8_t isReadyBtnPin,
                        uint8_t isReadyLedPin,
                        char *ssid,
@@ -23,8 +27,12 @@ Controller::Controller(uint8_t relayPin,
                        uint8_t keepWarmDuration)
 {
     _relayPin = relayPin;
-    _isScheduleModePin = isScheduleModePin;
-    _isOnModePin = isOnModePin;
+    _isOffModeBtnPin = isOffModeBtnPin;
+    _isOffModeLedPin = isOffModeLedPin;
+    _isScheduleModeBtnPin = isScheduleModeBtnPin;
+    _isScheduleModeLedPin = isScheduleModeLedPin;
+    _isOnModeBtnPin = isOnModeBtnPin;
+    _isOnModeLedPin = isOnModeLedPin;
     _isReadyBtnPin = isReadyBtnPin;
     _isReadyLedPin = isReadyLedPin;
     _wiFiLink = WiFiLink(ssid, password);
@@ -38,11 +46,20 @@ Controller::Controller(uint8_t relayPin,
 void Controller::setup()
 {
     pinMode(_relayPin, OUTPUT);
-    pinMode(_isScheduleModePin, INPUT_PULLUP);
-    pinMode(_isOnModePin, INPUT_PULLUP);
 
+    _isOffModeBtn = OneButton(_isOffModeBtnPin, true, true);
+    _isScheduleModeBtn = OneButton(_isScheduleModeBtnPin, true, true);
+    _isOnModeBtn = OneButton(_isOnModeBtnPin, true, true);
     _isReadyBtn = OneButton(_isReadyBtnPin, true, true);
+
+    _isOffModeBtn.attachClick(isOffModeBtnCallback, this);
+    _isScheduleModeBtn.attachClick(isScheduleModeBtnCallback, this);
+    _isOnModeBtn.attachClick(isOnModeBtnCallback, this);
     _isReadyBtn.attachClick(isReadyBtnCallback, this);
+
+    pinMode(_isOffModeLedPin, OUTPUT);
+    pinMode(_isScheduleModeLedPin, OUTPUT);
+    pinMode(_isOnModeLedPin, OUTPUT);
     pinMode(_isReadyLedPin, OUTPUT);
 
     stop();
@@ -53,8 +70,10 @@ void Controller::setup()
 
 void Controller::tick()
 {
+    _isOffModeBtn.tick();
+    _isScheduleModeBtn.tick();
+    _isOnModeBtn.tick();
     _isReadyBtn.tick();
-    evaluateMode();
     manage();
 }
 
@@ -99,36 +118,17 @@ bool Controller::isStarted()
 }
 
 // Private
-void Controller::evaluateMode()
+void Controller::setMode(ControlMode mode)
 {
-    bool isSchedule = !digitalRead(_isScheduleModePin);
-    bool isOn = !digitalRead(_isOnModePin);
+    _mode = mode;
 
-    // Check for potential shorts
-    if (isSchedule && isOn)
-    {
-        _mode = ControlMode::error;
-        return;
-    }
-
-    if (isOn)
-    {
-        _mode = ControlMode::on;
-    }
-    else if (isSchedule)
-    {
-        if (_mode == ControlMode::schedule_check || _mode == ControlMode::schedule_fulfill)
-        {
-            _mode = _mode;
-            return;
-        }
-
-        _mode = ControlMode::schedule_check;
-    }
-    else
-    {
-        _mode = ControlMode::off;
-    }
+    bool isOffState = _mode == ControlMode::off;
+    bool isScheduleState = _mode == ControlMode::schedule_check || _mode == ControlMode::schedule_fulfill;
+    bool isOnState = _mode == ControlMode::on;
+    
+    digitalWrite(_isOffModeLedPin, isOffState);
+    digitalWrite(_isScheduleModeLedPin, isScheduleState);
+    digitalWrite(_isOnModeLedPin, isOnState);
 }
 
 void Controller::manage()
@@ -173,7 +173,7 @@ void Controller::manage()
         if (!_isStarted)
         {
             start();
-            _mode = ControlMode::schedule_fulfill;
+            setMode(ControlMode::schedule_fulfill);
             break;
         }
         break;
@@ -183,7 +183,7 @@ void Controller::manage()
         if (shouldStop() && _isStarted)
         {
             stop();
-            _mode = ControlMode::schedule_check;
+            setMode(ControlMode::schedule_check);
             break;
         }
         break;
@@ -210,7 +210,24 @@ void Controller::control(bool state)
     setIsReady(false);
 }
 
-// Private
+void Controller::isOffModeBtnCallback(void *ptr)
+{
+    Controller *controllerPtr = (Controller *)ptr;
+    controllerPtr->setMode(ControlMode::off);
+}
+
+void Controller::isScheduleModeBtnCallback(void *ptr)
+{
+    Controller *controllerPtr = (Controller *)ptr;
+    controllerPtr->setMode(ControlMode::schedule_check);
+}
+
+void Controller::isOnModeBtnCallback(void *ptr)
+{
+    Controller *controllerPtr = (Controller *)ptr;
+    controllerPtr->setMode(ControlMode::on);
+}
+
 void Controller::isReadyBtnCallback(void *ptr)
 {
     Controller *controllerPtr = (Controller *)ptr;

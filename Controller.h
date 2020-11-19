@@ -13,8 +13,12 @@ class Controller
 {
 public:
   Controller(uint8_t relayPin,
-             uint8_t isScheduleModePin,
-             uint8_t isOnModePin,
+             uint8_t isOffModeBtnPin,
+             uint8_t isOffModeLedPin,
+             uint8_t isScheduleModeBtnPin,
+             uint8_t isScheduleModeLedPin,
+             uint8_t isOnModeBtnPin,
+             uint8_t isOnModeLedPin,
              uint8_t isReadyBtnPin,
              uint8_t isReadyLedPin,
              char *ssid,
@@ -35,16 +39,26 @@ public:
 private:
   ControlMode _mode = ControlMode::off;
   uint8_t _relayPin;
-  uint8_t _isScheduleModePin;
-  uint8_t _isOnModePin;
+  uint8_t _isOffModeBtnPin;
+  uint8_t _isOffModeLedPin;
+  uint8_t _isScheduleModeBtnPin;
+  uint8_t _isScheduleModeLedPin;
+  uint8_t _isOnModeBtnPin;
+  uint8_t _isOnModeLedPin;
   uint8_t _isReadyBtnPin;
   uint8_t _isReadyLedPin;
   bool _isStarted = false;
   bool _isReady = false;
+  OneButton _isOffModeBtn;
+  OneButton _isScheduleModeBtn;
+  OneButton _isOnModeBtn;
   OneButton _isReadyBtn;
-  void setIsReady(bool isReady);
+  static void isOffModeBtnCallback(void *ptr);
+  static void isScheduleModeBtnCallback(void *ptr);
+  static void isOnModeBtnCallback(void *ptr);
+  void setMode(ControlMode mode);
   static void isReadyBtnCallback(void *ptr);
-  void evaluateMode();
+  void setIsReady(bool isReady);
   void manage();
   void stop();
   void start();

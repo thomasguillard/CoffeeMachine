@@ -2,8 +2,12 @@
 #include "Config.h"
 
 Controller controller(config_relayPin,
-                      config_isScheduleModePin,
-                      config_isOnModePin,
+                      config_isOffModeBtnPin,
+                      config_isOffModeLedPin,
+                      config_isScheduleModeBtnPin,
+                      config_isScheduleModeLedPin,
+                      config_isOnModeBtnPin,
+                      config_isOnModeLedPin,
                       config_isReadyBtnPin,
                       config_isReadyLedPin,
                       config_ssid,
