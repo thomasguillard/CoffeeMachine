@@ -63,6 +63,7 @@ void Controller::setup()
     pinMode(_isReadyLedPin, OUTPUT);
 
     stop();
+    setMode(ControlMode::off);
 
     _wiFiLink.setup();
     _timeKeeper.setup();
@@ -205,7 +206,7 @@ void Controller::start()
 
 void Controller::control(bool state)
 {
-    digitalWrite(_relayPin, !state);
+    digitalWrite(_relayPin, state);
     _isStarted = state;
     setIsReady(false);
 }
