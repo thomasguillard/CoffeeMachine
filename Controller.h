@@ -21,11 +21,8 @@ public:
              uint8_t isOnModeLedPin,
              uint8_t isReadyBtnPin,
              uint8_t isReadyLedPin,
-             char *ssid,
-             char *password,
-             char *ntpServer,
-             char *timeZone,
-             uint16_t timeRefreshInterval,
+             WiFiLink wifiLink,
+             TimeKeeper timeKeeper,
              uint8_t targetTimeHours,
              uint8_t targetTimeMinutes,
              uint8_t keepWarmDuration);
