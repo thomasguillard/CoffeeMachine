@@ -4,7 +4,6 @@
 #include "ControlMode.h"
 #include "WiFiLink.h"
 #include "TimeKeeper.h"
-#include <OneButton.h>
 
 #ifndef Controller_h
 #define Controller_h
@@ -13,15 +12,8 @@ class Controller
 {
 public:
   Controller(uint8_t relayPin,
-             uint8_t isScheduleModePin,
-             uint8_t isOnModePin,
-             uint8_t isReadyBtnPin,
-             uint8_t isReadyLedPin,
-             char *ssid,
-             char *password,
-             char *ntpServer,
-             char *timeZone,
-             uint16_t timeRefreshInterval,
+             WiFiLink wifiLink,
+             TimeKeeper timeKeeper,
              uint8_t targetTimeHours,
              uint8_t targetTimeMinutes,
              uint8_t keepWarmDuration);
@@ -31,20 +23,15 @@ public:
   String showMode();
   bool isReady();
   bool isStarted();
+  ControlMode currentMode();
+  void setMode(ControlMode mode);
+  void toggleIsReady();
 
 private:
   ControlMode _mode = ControlMode::off;
   uint8_t _relayPin;
-  uint8_t _isScheduleModePin;
-  uint8_t _isOnModePin;
-  uint8_t _isReadyBtnPin;
-  uint8_t _isReadyLedPin;
   bool _isStarted = false;
   bool _isReady = false;
-  OneButton _isReadyBtn;
-  void setIsReady(bool isReady);
-  static void isReadyBtnCallback(void *ptr);
-  void evaluateMode();
   void manage();
   void stop();
   void start();
@@ -52,6 +39,7 @@ private:
   uint8_t _keepWarmDuration;
   uint8_t _targetTimeHours;
   uint8_t _targetTimeMinutes;
+  void setIsReady(bool isReady);
   bool shouldStart();
   bool shouldStop();
   WiFiLink _wiFiLink;

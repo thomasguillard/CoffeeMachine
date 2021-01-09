@@ -5,8 +5,13 @@
 #include <arduino.h>
 
 uint8_t config_relayPin;
-uint8_t config_isScheduleModePin;
-uint8_t config_isOnModePin;
+uint8_t config_I2CBusAddress;
+uint8_t config_isOffModeBtnPin;
+uint8_t config_isOffModeLedPin;
+uint8_t config_isScheduleModeBtnPin;
+uint8_t config_isScheduleModeLedPin;
+uint8_t config_isOnModeBtnPin;
+uint8_t config_isOnModeLedPin;
 uint8_t config_isReadyBtnPin;
 uint8_t config_isReadyLedPin;
 char *config_ssid;
