@@ -5,18 +5,9 @@
 #include "Arduino.h"
 #include "Controller.h"
 #include "ControlMode.h"
-#include <OneButton.h>
 
 // Constructor
 Controller::Controller(uint8_t relayPin,
-                       uint8_t isOffModeBtnPin,
-                       uint8_t isOffModeLedPin,
-                       uint8_t isScheduleModeBtnPin,
-                       uint8_t isScheduleModeLedPin,
-                       uint8_t isOnModeBtnPin,
-                       uint8_t isOnModeLedPin,
-                       uint8_t isReadyBtnPin,
-                       uint8_t isReadyLedPin,
                        WiFiLink wifiLink,
                        TimeKeeper timeKeeper,
                        uint8_t targetTimeHours,
@@ -24,14 +15,6 @@ Controller::Controller(uint8_t relayPin,
                        uint8_t keepWarmDuration)
 {
     _relayPin = relayPin;
-    _isOffModeBtnPin = isOffModeBtnPin;
-    _isOffModeLedPin = isOffModeLedPin;
-    _isScheduleModeBtnPin = isScheduleModeBtnPin;
-    _isScheduleModeLedPin = isScheduleModeLedPin;
-    _isOnModeBtnPin = isOnModeBtnPin;
-    _isOnModeLedPin = isOnModeLedPin;
-    _isReadyBtnPin = isReadyBtnPin;
-    _isReadyLedPin = isReadyLedPin;
     _wiFiLink = wifiLink;
     _timeKeeper = timeKeeper;
     _targetTimeHours = targetTimeHours;
@@ -44,21 +27,6 @@ void Controller::setup()
 {
     pinMode(_relayPin, OUTPUT);
 
-    _isOffModeBtn = OneButton(_isOffModeBtnPin, true, true);
-    _isScheduleModeBtn = OneButton(_isScheduleModeBtnPin, true, true);
-    _isOnModeBtn = OneButton(_isOnModeBtnPin, true, true);
-    _isReadyBtn = OneButton(_isReadyBtnPin, true, true);
-
-    _isOffModeBtn.attachClick(isOffModeBtnCallback, this);
-    _isScheduleModeBtn.attachClick(isScheduleModeBtnCallback, this);
-    _isOnModeBtn.attachClick(isOnModeBtnCallback, this);
-    _isReadyBtn.attachClick(isReadyBtnCallback, this);
-
-    pinMode(_isOffModeLedPin, OUTPUT);
-    pinMode(_isScheduleModeLedPin, OUTPUT);
-    pinMode(_isOnModeLedPin, OUTPUT);
-    pinMode(_isReadyLedPin, OUTPUT);
-
     stop();
     setMode(ControlMode::off);
 
@@ -68,10 +36,6 @@ void Controller::setup()
 
 void Controller::tick()
 {
-    _isOffModeBtn.tick();
-    _isScheduleModeBtn.tick();
-    _isOnModeBtn.tick();
-    _isReadyBtn.tick();
     manage();
 }
 
@@ -115,20 +79,22 @@ bool Controller::isStarted()
     return _isStarted;
 }
 
-// Private
+ControlMode Controller::currentMode()
+{
+    return _mode;
+}
+
+void Controller::toggleIsReady()
+{
+    setIsReady(!_isReady);
+}
+
 void Controller::setMode(ControlMode mode)
 {
     _mode = mode;
-
-    bool isOffState = _mode == ControlMode::off;
-    bool isScheduleState = _mode == ControlMode::schedule_check || _mode == ControlMode::schedule_fulfill;
-    bool isOnState = _mode == ControlMode::on;
-
-    digitalWrite(_isOffModeLedPin, isOffState);
-    digitalWrite(_isScheduleModeLedPin, isScheduleState);
-    digitalWrite(_isOnModeLedPin, isOnState);
 }
 
+// Private
 void Controller::manage()
 {
     switch (_mode)
@@ -203,39 +169,14 @@ void Controller::start()
 
 void Controller::control(bool state)
 {
-    digitalWrite(_relayPin, state);
+    digitalWrite(_relayPin, !state);
     _isStarted = state;
     setIsReady(false);
-}
-
-void Controller::isOffModeBtnCallback(void *ptr)
-{
-    Controller *controllerPtr = (Controller *)ptr;
-    controllerPtr->setMode(ControlMode::off);
-}
-
-void Controller::isScheduleModeBtnCallback(void *ptr)
-{
-    Controller *controllerPtr = (Controller *)ptr;
-    controllerPtr->setMode(ControlMode::schedule_check);
-}
-
-void Controller::isOnModeBtnCallback(void *ptr)
-{
-    Controller *controllerPtr = (Controller *)ptr;
-    controllerPtr->setMode(ControlMode::on);
-}
-
-void Controller::isReadyBtnCallback(void *ptr)
-{
-    Controller *controllerPtr = (Controller *)ptr;
-    controllerPtr->setIsReady(!controllerPtr->_isReady);
 }
 
 void Controller::setIsReady(bool isReady)
 {
     _isReady = isReady;
-    digitalWrite(_isReadyLedPin, _isReady);
 }
 
 // TODO: Link to schedule

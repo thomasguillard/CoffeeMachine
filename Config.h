@@ -5,6 +5,7 @@
 #include <arduino.h>
 
 uint8_t config_relayPin;
+uint8_t config_I2CBusAddress;
 uint8_t config_isOffModeBtnPin;
 uint8_t config_isOffModeLedPin;
 uint8_t config_isScheduleModeBtnPin;
@@ -20,4 +21,4 @@ char *config_timeZone;
 uint16_t config_timeRefreshInterval;
 uint8_t config_targetTimeHours;
 uint8_t config_targetTimeMinutes;
-uint8_t config_keepWarmDuration;
+uint8_t config_keepWarmDurations
