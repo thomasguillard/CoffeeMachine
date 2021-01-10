@@ -19,8 +19,7 @@ public:
              uint8_t keepWarmDuration);
   void setup();
   void tick();
-  // TODO: Temporary
-  String showMode();
+  char *showMode();
   bool isReady();
   bool isStarted();
   ControlMode currentMode();

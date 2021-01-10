@@ -39,7 +39,7 @@ void Controller::tick()
     manage();
 }
 
-String Controller::showMode()
+char* Controller::showMode()
 {
     switch (_mode)
     {

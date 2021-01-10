@@ -3,6 +3,7 @@
 #include "I2CButton.h"
 #include "Controller.h"
 #include "PCF8574.h"
+#include "RequestsMgr.h"
 
 Controller controller(config_relayPin,
                       WiFiLink(config_ssid,
@@ -38,23 +39,21 @@ I2CButtonsMgr buttonsMgr(&offButton,
                          &readyButton,
                          &controller);
 
+RequestsMgr requestsMgr(config_serverPort, 
+                        &controller);
+
 void setup()
 {
   Serial.begin(115200);
   controller.setup();
   I2CBus.begin();
   buttonsMgr.setup();
+  requestsMgr.setup();
 }
 
 void loop()
 {
   controller.tick();
   buttonsMgr.tick();
-
-  Serial.print("Mode: ");
-  Serial.print(controller.showMode());
-  Serial.print(" - IsReady: ");
-  Serial.print(controller.isReady());
-  Serial.print(" - IsStarted: ");
-  Serial.println(controller.isStarted());
+  requestsMgr.tick();
 }

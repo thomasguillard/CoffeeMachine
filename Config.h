@@ -22,3 +22,4 @@ uint16_t config_timeRefreshInterval;
 uint8_t config_targetTimeHours;
 uint8_t config_targetTimeMinutes;
 uint8_t config_keepWarmDuration;
+uint8_t config_serverPort;
