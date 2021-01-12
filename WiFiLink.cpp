@@ -25,6 +25,8 @@ void WiFiLink::setup()
         if (++counter > 100)
             ESP.restart();
     }
+    Serial.println("IP address:");
+    Serial.println(WiFi.localIP());
 }
 
 // Private
