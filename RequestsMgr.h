@@ -25,6 +25,8 @@ private:
     void handleRoot();
     void handleInfo();
     void handleSetMode();
+    void handleGetSchedule();
+    void handleSetSchedule();
     void handleNotFound();
     const char* CONTENT_TYPE = "text/plain";
     const int OK = 200;

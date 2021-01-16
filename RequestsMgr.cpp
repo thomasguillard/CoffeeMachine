@@ -20,6 +20,8 @@ void RequestsMgr::setup()
   _webServer.on("/", std::bind(&RequestsMgr::handleRoot, this));
   _webServer.on("/info", std::bind(&RequestsMgr::handleInfo, this));
   _webServer.on("/setMode", std::bind(&RequestsMgr::handleSetMode, this));
+  _webServer.on("/getSchedule", std::bind(&RequestsMgr::handleGetSchedule, this));
+  _webServer.on("/setSchedule", std::bind(&RequestsMgr::handleSetSchedule, this));
   _webServer.onNotFound(std::bind(&RequestsMgr::handleNotFound, this));
   _webServer.begin();
 }
@@ -118,6 +120,62 @@ void RequestsMgr::handleSetMode()
   _webServer.send(this->OK,
                   this->CONTENT_TYPE,
                   res);
+}
+
+void RequestsMgr::handleGetSchedule()
+{
+  _webServer.send(this->OK,
+                  this->CONTENT_TYPE,
+                  _controller->getSchedule());
+}
+
+void RequestsMgr::handleSetSchedule()
+{
+  if (_webServer.method() != HTTP_POST)
+  {
+    _webServer.send(this->METHOD_NOT_ALLOWED,
+                    this->CONTENT_TYPE,
+                    "Expecting 'Post'.");
+    return;
+  }
+
+  if (!_webServer.hasArg("hour"))
+  {
+    _webServer.send(this->BAD_REQUEST,
+                    this->CONTENT_TYPE,
+                    "Expecting a 'hour' argument.");
+    return;
+  }
+
+  if (!_webServer.hasArg("minute"))
+  {
+    _webServer.send(this->BAD_REQUEST,
+                    this->CONTENT_TYPE,
+                    "Expecting a 'minute' argument.");
+    return;
+  }
+
+  if (!_webServer.hasArg("keepWarmDuration"))
+  {
+    _webServer.send(this->BAD_REQUEST,
+                    this->CONTENT_TYPE,
+                    "Expecting a 'keepWarmDuration' argument.");
+    return;
+  }
+
+  const String hourArgValue = _webServer.arg("hour");
+  const String minuteArgValue = _webServer.arg("minute");
+  const String keepWarmDurationArgValue = _webServer.arg("keepWarmDuration");
+  
+  const uint8_t hour = (uint8_t)hourArgValue.toInt();
+  const uint8_t minute = (uint8_t)minuteArgValue.toInt();
+  const uint8_t keepWarmDuration = (uint8_t)keepWarmDurationArgValue.toInt();
+
+  _controller->setSchedule(hour, minute, keepWarmDuration);
+
+  _webServer.send(this->OK,
+                  this->CONTENT_TYPE,
+                  "New schedule applied");
 }
 
 void RequestsMgr::handleNotFound()

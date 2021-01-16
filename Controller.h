@@ -1,9 +1,10 @@
 /*
   Controller.h - Support Library to control a coffee machine.
 */
+#include "RTClib.h"
+#include "Arduino.h"
 #include "ControlMode.h"
 #include "WiFiLink.h"
-#include "TimeKeeper.h"
 
 #ifndef Controller_h
 #define Controller_h
@@ -12,11 +13,7 @@ class Controller
 {
 public:
   Controller(uint8_t relayPin,
-             WiFiLink wifiLink,
-             TimeKeeper timeKeeper,
-             uint8_t targetTimeHours,
-             uint8_t targetTimeMinutes,
-             uint8_t keepWarmDuration);
+             WiFiLink wifiLink);
   void setup();
   void tick();
   char *showMode();
@@ -25,6 +22,8 @@ public:
   ControlMode currentMode();
   void setMode(ControlMode mode);
   void toggleIsReady();
+  void setSchedule(uint8_t hours, uint8_t minutes, uint8_t keepWarmDuration);
+  char *getSchedule();
 
 private:
   ControlMode _mode = ControlMode::off;
@@ -35,14 +34,13 @@ private:
   void stop();
   void start();
   void control(bool state);
-  uint8_t _keepWarmDuration;
-  uint8_t _targetTimeHours;
-  uint8_t _targetTimeMinutes;
   void setIsReady(bool isReady);
   bool shouldStart();
   bool shouldStop();
   WiFiLink _wiFiLink;
-  TimeKeeper _timeKeeper;
+  RTC_DS3231 _rtc;
+  DateTime _startDateTime;
+  DateTime _endDateTime;
 };
 
 #endif
