@@ -7,13 +7,7 @@
 
 Controller controller(config_relayPin,
                       WiFiLink(config_ssid,
-                               config_password),
-                      TimeKeeper(config_ntpServer,
-                                 config_timeZone,
-                                 config_timeRefreshInterval),
-                      config_targetTimeHours,
-                      config_targetTimeMinutes,
-                      config_keepWarmDuration);
+                               config_password));
 
 PCF8574 I2CBus(config_I2CBusAddress);
 
@@ -46,6 +40,9 @@ void setup()
 {
   Serial.begin(115200);
   controller.setup();
+  controller.setSchedule(config_targetTimeHours,
+                         config_targetTimeMinutes, 
+                         config_keepWarmDuration);
   I2CBus.begin();
   buttonsMgr.setup();
   requestsMgr.setup();

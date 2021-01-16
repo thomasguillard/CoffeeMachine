@@ -8,18 +8,10 @@
 
 // Constructor
 Controller::Controller(uint8_t relayPin,
-                       WiFiLink wifiLink,
-                       TimeKeeper timeKeeper,
-                       uint8_t targetTimeHours,
-                       uint8_t targetTimeMinutes,
-                       uint8_t keepWarmDuration)
+                       WiFiLink wifiLink)
 {
     _relayPin = relayPin;
     _wiFiLink = wifiLink;
-    _timeKeeper = timeKeeper;
-    _targetTimeHours = targetTimeHours;
-    _targetTimeMinutes = targetTimeMinutes;
-    _keepWarmDuration = keepWarmDuration;
 }
 
 // Public
@@ -31,7 +23,7 @@ void Controller::setup()
     setMode(ControlMode::off);
 
     _wiFiLink.setup();
-    _timeKeeper.setup();
+    _rtc.begin();
 }
 
 void Controller::tick()
@@ -39,7 +31,7 @@ void Controller::tick()
     manage();
 }
 
-char* Controller::showMode()
+char *Controller::showMode()
 {
     switch (_mode)
     {
@@ -94,6 +86,34 @@ void Controller::setMode(ControlMode mode)
     _mode = mode;
 }
 
+void Controller::setSchedule(uint8_t hours, uint8_t minutes, uint8_t keepWarmDuration)
+{
+    DateTime now = _rtc.now();
+    _startDateTime = DateTime(now.year(),
+                              now.month(),
+                              now.day(),
+                              hours,
+                              minutes,
+                              0);
+    _endDateTime = _startDateTime + TimeSpan(keepWarmDuration * 60);
+}
+
+char *Controller::getSchedule()
+{
+    TimeSpan keepWarm = _endDateTime - _startDateTime;
+
+    char res[1000];
+    snprintf(res,
+             sizeof(res),
+             "%d:%d for %dh, %dm",
+             _startDateTime.hour(),
+             _startDateTime.minute(),
+             keepWarm.hours(),
+             keepWarm.minutes());
+
+    return res;
+}
+
 // Private
 void Controller::manage()
 {
@@ -123,8 +143,6 @@ void Controller::manage()
             break;
         }
 
-        _timeKeeper.tick();
-
         if (!shouldStart())
         {
             if (_isStarted)
@@ -143,7 +161,6 @@ void Controller::manage()
         break;
 
     case ControlMode::schedule_fulfill:
-        _timeKeeper.tick();
         if (shouldStop() && _isStarted)
         {
             stop();
@@ -182,47 +199,36 @@ void Controller::setIsReady(bool isReady)
 // TODO: Link to schedule
 bool Controller::shouldStart()
 {
-    Serial.println("Evaluate shouldStart!");
-    // Retrieve current time
-    tm currentTimeInfo = _timeKeeper.currentTime();
-    time_t currentTime = mktime(&currentTimeInfo);
+    Serial.println("Evaluate shouldStart:");
+    Serial.println("---------------------");
 
-    // Set start target time
-    tm startTargetTimeInfo = currentTimeInfo;
-    startTargetTimeInfo.tm_hour = (int)_targetTimeHours;
-    startTargetTimeInfo.tm_min = (int)_targetTimeMinutes;
-    startTargetTimeInfo.tm_sec = 0;
-    time_t startTargetTime = mktime(&startTargetTimeInfo);
-
-    // Set end target time
-    tm endTargetTimeInfo = startTargetTimeInfo;
-    endTargetTimeInfo.tm_min += (int)_keepWarmDuration;
-    time_t endTargetTime = mktime(&endTargetTimeInfo);
+    DateTime now = _rtc.now();
 
     // Display info
-    Serial.print("Current time - ");
-    Serial.println(ctime(&currentTime));
-    Serial.print("Start target time - ");
-    Serial.println(ctime(&startTargetTime));
-    Serial.print("End target time - ");
-    Serial.println(ctime(&endTargetTime));
+    Serial.print("> Current time: ");
+    Serial.println(now.timestamp());
+    Serial.print("> Start target time: ");
+    Serial.println(_startDateTime.timestamp());
+    Serial.print("> End target time: ");
+    Serial.println(_endDateTime.timestamp());
 
     // Evaluate scenario
-    bool pastStartMoment = difftime(startTargetTime, currentTime) <= 0;
-    bool pastFinishWarmingMoment = difftime(endTargetTime, currentTime) <= 0;
+    bool pastStartMoment = now >= _startDateTime;
+    bool pastFinishWarmingMoment = now >= _endDateTime;
 
     // Display info
-    Serial.print("pastStartMoment - ");
+    Serial.print("-> pastStartMoment: ");
     Serial.println(pastStartMoment);
-    Serial.print("pastFinishWarmingMoment - ");
+    Serial.print("-> pastFinishWarmingMoment: ");
     Serial.println(pastFinishWarmingMoment);
 
     // Evaluate result
     bool shouldStart = pastStartMoment && !pastFinishWarmingMoment;
 
     // Display info
-    Serial.print("shouldStart - ");
+    Serial.print("=> shouldStart: ");
     Serial.println(shouldStart);
+    Serial.println();
 
     return shouldStart;
 }
@@ -230,31 +236,25 @@ bool Controller::shouldStart()
 // TODO: Link to Schedule
 bool Controller::shouldStop()
 {
-    Serial.println("Evaluate shouldStop!");
-    // Retrieve current time
-    tm currentTimeInfo = _timeKeeper.currentTime();
-    time_t currentTime = mktime(&currentTimeInfo);
+    Serial.println("Evaluate shouldStop:");
+    Serial.println("--------------------");
 
-    // Set end target time
-    tm endTargetTimeInfo = currentTimeInfo;
-    endTargetTimeInfo.tm_hour = (int)_targetTimeHours;
-    endTargetTimeInfo.tm_min = (int)_targetTimeMinutes;
-    endTargetTimeInfo.tm_sec = 0;
-    endTargetTimeInfo.tm_min += (int)_keepWarmDuration;
-    time_t endTargetTime = mktime(&endTargetTimeInfo);
+    DateTime now = _rtc.now();
 
     // Display info
-    Serial.print("Current time - ");
-    Serial.println(ctime(&currentTime));
-    Serial.print("End target time - ");
-    Serial.println(ctime(&endTargetTime));
+    Serial.print("> Current time: ");
+    Serial.println(now.timestamp());
+
+    Serial.print("> End target time: ");
+    Serial.println(_endDateTime.timestamp());
 
     // Evaluate result
-    bool shouldStop = difftime(endTargetTime, currentTime) <= 0;
+    bool shouldStop = now >= _endDateTime;
 
     // Display info
-    Serial.print("shouldStop - ");
+    Serial.print("=> Should stop: ");
     Serial.println(shouldStop);
+    Serial.println();
 
     return shouldStop;
 }
