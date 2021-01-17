@@ -19,9 +19,8 @@ void RequestsMgr::setup()
 {
   _webServer.on("/", std::bind(&RequestsMgr::handleRoot, this));
   _webServer.on("/info", std::bind(&RequestsMgr::handleInfo, this));
-  _webServer.on("/setMode", std::bind(&RequestsMgr::handleSetMode, this));
-  _webServer.on("/getSchedule", std::bind(&RequestsMgr::handleGetSchedule, this));
-  _webServer.on("/setSchedule", std::bind(&RequestsMgr::handleSetSchedule, this));
+  _webServer.on("/controlMode", std::bind(&RequestsMgr::handleControlMode, this));
+  _webServer.on("/schedule", std::bind(&RequestsMgr::handleSchedule, this));
   _webServer.onNotFound(std::bind(&RequestsMgr::handleNotFound, this));
   _webServer.begin();
 }
@@ -53,16 +52,64 @@ void RequestsMgr::handleInfo()
                   res);
 }
 
-void RequestsMgr::handleSetMode()
+void RequestsMgr::handleControlMode()
 {
-  if (_webServer.method() != HTTP_POST)
+  if (_webServer.method() == HTTP_GET)
+  {
+    getControlMode();
+  }
+  else if (_webServer.method() == HTTP_POST)
+  {
+    setControlMode();
+  }
+  else
   {
     _webServer.send(this->METHOD_NOT_ALLOWED,
                     this->CONTENT_TYPE,
-                    "Expecting 'Post'.");
-    return;
+                    "Expecting 'GET' or 'POST' verb.");
   }
+}
 
+void RequestsMgr::handleSchedule()
+{
+  if (_webServer.method() == HTTP_GET)
+  {
+    getSchedule();
+  }
+  else if (_webServer.method() == HTTP_POST)
+  {
+    setSchedule();
+  }
+  else
+  {
+    _webServer.send(this->METHOD_NOT_ALLOWED,
+                    this->CONTENT_TYPE,
+                    "Expecting 'GET' or 'POST' verb.");
+  }
+}
+
+void RequestsMgr::handleNotFound()
+{
+  _webServer.send(this->NOT_FOUND,
+                  this->CONTENT_TYPE,
+                  "Woohaa horsy, coffee machine has no idea what you are on about!");
+}
+
+void RequestsMgr::getControlMode()
+{
+  char res[100];
+  snprintf(res,
+           sizeof(res),
+           "ControlMode is '%s'",
+           _controller->showMode());
+
+  _webServer.send(this->OK,
+                  this->CONTENT_TYPE,
+                  res);
+}
+
+void RequestsMgr::setControlMode()
+{
   if (!_webServer.hasArg("controlMode"))
   {
     _webServer.send(this->BAD_REQUEST,
@@ -106,7 +153,6 @@ void RequestsMgr::handleSetMode()
     _webServer.send(this->BAD_REQUEST,
                     this->CONTENT_TYPE,
                     res);
-    return;
   }
 
   _controller->setMode(nextMode);
@@ -114,7 +160,7 @@ void RequestsMgr::handleSetMode()
   char res[100];
   snprintf(res,
            sizeof(res),
-           "ControlMode '%s' applied.",
+           "ControlMode set to '%s'.",
            requestedMode);
 
   _webServer.send(this->OK,
@@ -122,23 +168,15 @@ void RequestsMgr::handleSetMode()
                   res);
 }
 
-void RequestsMgr::handleGetSchedule()
+void RequestsMgr::getSchedule()
 {
   _webServer.send(this->OK,
                   this->CONTENT_TYPE,
                   _controller->getSchedule());
 }
 
-void RequestsMgr::handleSetSchedule()
+void RequestsMgr::setSchedule()
 {
-  if (_webServer.method() != HTTP_POST)
-  {
-    _webServer.send(this->METHOD_NOT_ALLOWED,
-                    this->CONTENT_TYPE,
-                    "Expecting 'Post'.");
-    return;
-  }
-
   if (!_webServer.hasArg("hour"))
   {
     _webServer.send(this->BAD_REQUEST,
@@ -166,7 +204,31 @@ void RequestsMgr::handleSetSchedule()
   const String hourArgValue = _webServer.arg("hour");
   const String minuteArgValue = _webServer.arg("minute");
   const String keepWarmDurationArgValue = _webServer.arg("keepWarmDuration");
-  
+
+  if (hourArgValue.isEmpty())
+  {
+    _webServer.send(this->BAD_REQUEST,
+                    this->CONTENT_TYPE,
+                    "'hour' argument cannot be left empty.");
+    return;
+  }
+
+  if (minuteArgValue.isEmpty())
+  {
+    _webServer.send(this->BAD_REQUEST,
+                    this->CONTENT_TYPE,
+                    "'minute' argument cannot be left empty.");
+    return;
+  }
+
+  if (keepWarmDurationArgValue.isEmpty())
+  {
+    _webServer.send(this->BAD_REQUEST,
+                    this->CONTENT_TYPE,
+                    "'keepWarmDuration' argument cannot be left empty.");
+    return;
+  }
+
   const uint8_t hour = (uint8_t)hourArgValue.toInt();
   const uint8_t minute = (uint8_t)minuteArgValue.toInt();
   const uint8_t keepWarmDuration = (uint8_t)keepWarmDurationArgValue.toInt();
@@ -176,11 +238,4 @@ void RequestsMgr::handleSetSchedule()
   _webServer.send(this->OK,
                   this->CONTENT_TYPE,
                   "New schedule applied");
-}
-
-void RequestsMgr::handleNotFound()
-{
-  _webServer.send(this->NOT_FOUND,
-                  this->CONTENT_TYPE,
-                  "Woohaa horsy, coffee machine has no idea what you are on about!");
 }
