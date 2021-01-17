@@ -24,10 +24,13 @@ private:
     Controller *_controller;
     void handleRoot();
     void handleInfo();
-    void handleSetMode();
-    void handleGetSchedule();
-    void handleSetSchedule();
+    void handleControlMode();
+    void handleSchedule();
     void handleNotFound();
+    void getControlMode();
+    void setControlMode();
+    void getSchedule();
+    void setSchedule();
     const char* CONTENT_TYPE = "text/plain";
     const int OK = 200;
     const int BAD_REQUEST = 400;
